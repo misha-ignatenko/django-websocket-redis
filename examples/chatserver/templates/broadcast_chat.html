@@ -20,6 +20,7 @@ jQuery(document).ready(function($) {
 	$("#text_message").keydown(function(event) {
 		if (event.keyCode === 13) {
 			event.preventDefault();
+			console.log("GONNA SEND BROADCAST MSG");
 			ws4redis.send_message($('#text_message').val());
 		}
 	});

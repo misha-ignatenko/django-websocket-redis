@@ -19,19 +19,46 @@
 {% block script_panel %}
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-	var ws4redis = WS4Redis({
-		uri: '{{ WEBSOCKET_URI }}foobar?subscribe-group',
-		receive_message: receiveMessage,
-		heartbeat_msg: {{ WS4REDIS_HEARTBEAT }}
-	});
-	var billboard = $('#billboard');
+	//todo: INITIALIZE REDIS ONLY AFTER LOAD OF HISTORICAL CHATS IS DONE
+	$.get('{% url "get_historic_chat_messages" %}', {
 
-	$("#text_message").keydown(function(event) {
-		if (event.keyCode === 13) {
-			event.preventDefault();
-			sendMessage();
-		}
-	});
+	}).done(function(result) {
+		console.log("loading chat history done: ", result);
+
+		var billboard = $('#billboard');
+		function addToBillBoard (msg) {
+			billboard.append('<br/>' + msg);
+			billboard.scrollTop(billboard.scrollTop() + 25);
+		};
+
+
+		result.messages.forEach(function(message) {
+			console.log(message);
+			addToBillBoard(message.fields.msg_text);
+		});
+
+
+
+
+
+
+
+
+
+
+
+		var ws4redis = WS4Redis({
+			uri: '{{ WEBSOCKET_URI }}foobar?subscribe-group',
+			receive_message: receiveMessage,
+			heartbeat_msg: {{ WS4REDIS_HEARTBEAT }}
+		});
+
+		$("#text_message").keydown(function(event) {
+			if (event.keyCode === 13) {
+				event.preventDefault();
+				sendMessage();
+			}
+		});
 
 	$('#send_message').click(sendMessage);
 
@@ -43,11 +70,28 @@ jQuery(document).ready(function($) {
 		});
 	}
 
+	var _initialLoadCompleted = false;
+
 	// receive a message though the Websocket from the server
 	function receiveMessage(msg) {
-		billboard.append('<br/>' + msg);
-		billboard.scrollTop(billboard.scrollTop() + 25);
+		if (!_initialLoadCompleted) {
+			_initialLoadCompleted = true;
+			console.log("connected to redis, initial load done, any new non-historic messages will appear here from now on");
+		} else {
+			console.log("receiving msg after initial load: ", msg);
+			addToBillBoard(msg);
+		}
 	}
+
+	});
+
+
+
+
+
+
+
+
 });
 </script>
 {% endblock script_panel %}
